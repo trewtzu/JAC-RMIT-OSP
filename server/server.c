@@ -11,17 +11,9 @@
 /*
  * NOTES: need to add code to close socket before all mode of exit as i think it takes the network card a while to do it on its own.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 
-//needs to be put in a header or just put in line, but i think i might be useful later
-#define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
+#include "../shared/util.h"
 void *clientAction(int sock, int j);
 
 /*

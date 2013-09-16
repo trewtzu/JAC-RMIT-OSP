@@ -6,17 +6,7 @@
  *
  * initial design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
  */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h> 
-
-#define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
+#include "../shared/util.h"
 
 /*
  * Simple error output, 'msg' should be the conext for the error
