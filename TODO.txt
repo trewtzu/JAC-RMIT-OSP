@@ -1,0 +1,17 @@
+CRItICAL AND BIG
+Data streaming, 
+Playback
+
+
+crit but small
+send queue to client
+pipe music / queue tp display
+
+need to be done:
+replace all magic numbers with consts
+note that network based consts need to be put in to a protocal document.
+add input to select queue
+Add makefile
+
+should be done:
+make curses display
