@@ -15,3 +15,4 @@ Add makefile
 
 should be done:
 make curses display
+Fix code style (yeah, my bad)

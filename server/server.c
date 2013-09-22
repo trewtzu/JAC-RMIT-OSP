@@ -4,17 +4,21 @@
  *
  *
  *
- * initial design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
+ * Init design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
  */
 
 
 /*
- * NOTES: need to add code to close socket before all mode of exit as i think it takes the network card a while to do it on its own.
+ * TODO: need to add code to close socket before all mode of exit as i think it takes the network card a while to do it on its own.
  */
 
 
 #include "../shared/util.h"
-void *clientAction(int sock, int j);
+#include "queue.h"
+#include "fileio.h"
+
+void *
+clientAction(int sock, int j);
 
 /*
  * Simple error output, 'msg' should be the conext for the error
@@ -79,12 +83,13 @@ int main(int argc, char *argv[])
 	 * Below is the threading loop, this needs to be modded to suit, but its pretty stright forward
 	 * */
 
-	int j =0;
-	while(j<10)
-	{
 	
-		j++;
-		printf("in loop, @ %di\n", j);
+	read_directory();
+
+ 	int thread_id=0;;
+ 	while(1)
+	{
+		printf("Preping thread %d...\n", thread_id);
 		
 		//i have no idea at all what cli_addr is used for
 		clilen = sizeof(cli_addr);
@@ -93,11 +98,13 @@ int main(int argc, char *argv[])
 			error("ERROR on accept");
 		
 
-		printf("forking\n");
+		printf("Detaching Thread...");
 		pthread_t thread; //note, if we want to access the thread later we will need to store this somewhere
-		pthread_create(&thread,NULL,&clientAction,newsockfd,j);	 //this core action of starting a thread, arg 3 is the func name it will start on, all past that are args to pass to that func
-		printf("forked");
-	}
+		pthread_create(&thread,NULL,&clientAction,newsockfd,thread_id);	 //this core action of starting a thread, arg 3 is the func name it will start on, all past that are args to pass to that func
+		printf("Thread live\n");
+		
+		thread_id++;
+ 	}
 
 	//close the socket
 	close(sockfd);
@@ -107,28 +114,56 @@ int main(int argc, char *argv[])
 
 /*
  * This is an example action to be take by our thread, 
+ * TODO: ensure that buffer size is make a const in shared util
  */
 void *clientAction(int clisock, int id){
 	int n;
-	printf("starting action\n");
+	printf("Starting thread %d\n",id);
 	char buffer[256];
 
 
-	while(1){
-		bzero(buffer,sizeof(buffer));
-		n = read(clisock,buffer,255);
-		
-		if (n < 0)
-			error("ERROR reading from socket");
-		
-		printf("Client %d:: %s\n",id,buffer);
-		
-		n = write(clisock,"Ack",18);
+	char** listing = import_list();
+	int i;
+	for (i = 0; listing[i] != NULL; i++)
+	{
+		printf ("Writing %s\n", listing[i]);
+		n = write(clisock,listing[i],255);
 		if (n < 0)
 			error("ERROR writing to socket");
-
-	}
+	}	
 	
-	printf("ending");
+	printf("Sending ending\n");
+	
+	n = write(clisock,"99",255);
+	if (n < 0)
+		error("ERROR writing to socket");
+	
+	printf("waiting for reply\n");
+	n = read(clisock,buffer,255);
+	if (n < 0)
+		error("ERROR reading from socket");
+		
+	printf("Client %d:: %s\n",id,buffer);
+
+	
+	
+	
+// 	while(1){
+// 		bzero(buffer,sizeof(buffer));
+// 		
+// 		
+// 		
+// 		n = read(clisock,buffer,255);
+// 		
+// 		if (n < 0)
+// 			error("ERROR reading from socket");
+// 		
+// 		printf("Client %d:: %s\n",id,buffer);
+// 		
+// 		
+// 
+// 	}
+	
+	printf("%d ending", id);
 	close(clisock);
 }
