@@ -7,6 +7,9 @@
  * initial design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
  */
 #include "../shared/util.h"
+#include "queue.h"
+
+
 
 /*
  * Simple error output, 'msg' should be the conext for the error
@@ -70,7 +73,7 @@ int main(int argc, char *argv[])
 	//	simpleDisplay(sL,4,sQ,4);
 
 
-	char buffer[256];
+
 	if (argc < 3) {
 		fprintf(stderr,"usage %s hostname port\n", argv[0]);
 		exit(0);
@@ -108,44 +111,15 @@ int main(int argc, char *argv[])
 	 */
 	printf("Starting client payload\n\n");
 
-
-	while(1){
-		bzero(buffer,256);
-
-		printf("Play List:\n");
-		while(1){
-		
-			n = read(sockfd,buffer,255);
-			if (n < 0) 
-				error("ERROR read from socket");
-			//TODO: this will need to be replaced by a const proto code
-			if( strcmp(buffer,"99") == 0){
-				printf("Done\n");
-				break;
-			}
-			
-			printf("%s\n",buffer);
-		}
-			
-	 
+	begin(1, sockfd);
 
 
-	 //TODO: proto code here
-	n = write(sockfd,"ack",255);
 
-	if (n < 0) 
-		error("ERROR writing to socket");
-	
-	
 	sleep(10);
 
-
-	}
-
-close(sockfd);
-return 0;
+	close(sockfd);
+	return 0;
 }
-
 
 
 
