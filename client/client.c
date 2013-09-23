@@ -7,8 +7,8 @@
  * initial design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
  */
 #include "../shared/util.h"
-#include "queue.h"
-
+#include "../shared/queue.h"
+#include "../shared/protocol.h"
 
 
 /*

@@ -1,10 +1,10 @@
 #include "selectionController.h"
-#include "queue.h"
+#include "../shared/queue.h"
 
 void begin(int simple, int sockfd){
 
 	int n;
-		char buffer[256];
+		char buffer[PACKET_S+1];
 
 		
 	//NOTE: Simeple interface is blocking!
@@ -15,22 +15,22 @@ void begin(int simple, int sockfd){
 			queue = new_queue ();
 			listing = new_queue ();
 
-				n = write(sockfd,"101",255);
+				n = write(sockfd,REQUEST_LISTS, PACKET_S);
 
 				if (n < 0) 
 					error("ERROR writing to socket");
 
 
-				bzero(buffer,256);
+				bzero(buffer,PACKET_S+1);
 
 				printf("Track List:\n");
 				while(1){
 
-					n = read(sockfd,buffer,255);
+					n = read(sockfd,buffer,PACKET_S);
 					if (n < 0) 
 						error("ERROR read from socket");
 					//TODO: this will need to be replaced by a const proto code
-					if( strcmp(buffer,"98") == 0){
+					if( strcmp(buffer,END_OF_TRACKS) == 0){
 						printf("Done\n");
 						break;
 					}
@@ -41,11 +41,11 @@ void begin(int simple, int sockfd){
 				printf("Queue List:\n");
 				while(1){
 
-					n = read(sockfd,buffer,255);
+					n = read(sockfd,buffer,PACKET_S);
 					if (n < 0) 
 						error("ERROR read from socket");
 					//TODO: this will need to be replaced by a const proto code
-					if( strcmp(buffer,"99") == 0){
+					if( strcmp(buffer,END_OF_QUEUE) == 0){
 						printf("Done\n");
 						break;
 					}
@@ -57,7 +57,7 @@ void begin(int simple, int sockfd){
 
 
 				//TODO: proto code here
-				n = write(sockfd,"ack",255);
+				n = write(sockfd,"ack",PACKET_S);
 
 				if (n < 0) 
 					error("ERROR writing to socket");
@@ -65,14 +65,14 @@ void begin(int simple, int sockfd){
 				simpleDisplay( get_list( listing), listing->count, get_list( queue), queue->count);
 				
 				//TODO remove magic numbers
-				bzero(buffer, 256);
-				fgets(buffer, 255, stdin);
+				bzero(buffer, PACKET_S+1);
+				fgets(buffer, PACKET_S, stdin);
 				if(buffer == NULL || buffer[0] =='\n') {
 					printf("nul buf");
-					sleep(5);
+					//sleep(5);
 				}else{
 					printf("non nul buf");
-					n = write(sockfd,"102",255);
+					n = write(sockfd,ADD_TO_QUEUE,PACKET_S);
 					if (n < 0) 
 						error("ERROR writing to socket");
 					
@@ -87,7 +87,7 @@ void begin(int simple, int sockfd){
 		
 	}
 	else{
-		printf("not really for non simple UI");
+		printf("not ready for non simple UI");
 	}
 	}
 

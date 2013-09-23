@@ -10,8 +10,9 @@
  * both server and client.
  * * * * * * * * * * * * * * * * */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef UTIL_H_
+#define UTIL_H_
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,8 @@
 
 #include <netdb.h> 
 
+
+#include "queue.h"
 
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
 

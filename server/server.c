@@ -14,7 +14,8 @@
 
 
 #include "../shared/util.h"
-#include "queue.h"
+#include "../shared/queue.h"
+#include "../shared/protocol.h"
 #include "fileio.h"
 
 queue_t *queue; 
@@ -89,22 +90,19 @@ int main(int argc, char *argv[])
 	 */
 	
 	
-	
 	queue = new_queue (); //NOTE THIS IS THE GLOBEL SONG QUEUE
+	read_directory();
 	
 	
-	//NOTE: DEBUG code
+	//NOTE: testing code
 	char ** all_songs;
 	all_songs = import_list ();
 	int i;
 	for (i = 0; all_songs[i] != NULL; i++)
-		add_song (queue, all_songs[i]);
+		if(i%2==0)
+			add_song (queue, all_songs[i]);
 	
-	
-	read_directory();
-	
-	
-	
+
 	/*
 	 * Below is the threading loop, this needs to be modded to suit, but its pretty stright forward
 	 * */
@@ -137,17 +135,17 @@ int main(int argc, char *argv[])
 
 
 /*
- * This is an example action to be take by our thread, 
- * TODO: ensure that buffer size is make a const in shared util
+ * This is an action to be take by our thread, 
  */
 void *clientAction(int clisock, int id){
 	int n;
 	printf("Starting thread %d\n",id);
-	char buffer[256];
-	//queue_t *queue = *queue_ptr;
+	char buffer[PACKET_S+1];
+	bzero(buffer,PACKET_S+1);
+	
 	
 	do{
-		n = read(clisock,buffer,255);
+		n = read(clisock,buffer,PACKET_S);
 		if (n < 0)
 			error("ERROR reading from socket");
 		
@@ -158,11 +156,12 @@ void *clientAction(int clisock, int id){
 				sendListings(clisock, id);
 				break;
 		
-		case 102:
-			printf("%d requesting queue change\n",id);
-			break;
-		default:
-			printf("error in the buff, i got %s\n",buffer);
+			case 102:
+				printf("%d requesting queue change\n",id);
+				break;
+			default:
+				printf("error in the buff, i got %s\n",buffer);
+				break;
 		}
 		
 	}while(1);
@@ -194,7 +193,7 @@ void *clientAction(int clisock, int id){
 void sendListings(int clisock, int id){
 
 	int n;
-	char buffer[256];
+	char buffer[PACKET_S+1];
 	char** listing = import_list();
 	char** q_songs = get_list(queue);
 	
@@ -203,13 +202,13 @@ void sendListings(int clisock, int id){
 	for (i = 0; listing[i] != NULL; i++)
 	{
 		printf ("Writing %s to %d\n", listing[i], id);
-		n = write(clisock,listing[i],255);
+		n = write(clisock,listing[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	}	
 	
 	printf("Sending Track ending\n");
-	n = write(clisock,"98",255);
+	n = write(clisock,END_OF_TRACKS,PACKET_S);
 	if (n < 0)
 		error("ERROR writing to socket");
 	
@@ -217,20 +216,20 @@ void sendListings(int clisock, int id){
 	for (i = 0; q_songs[i] != NULL; i++)
 	{
 		printf ("Writing %s to %d\n", q_songs[i], id);
-		n = write(clisock,q_songs[i],255);
+		n = write(clisock,q_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	}	
 	
 	printf("Sending queue ending\n");
-	n = write(clisock,"99",255);
+	n = write(clisock,END_OF_QUEUE,PACKET_S);
 	if (n < 0)
 		error("ERROR writing to socket");
 	
 	
 	
 	printf("waiting for reply\n");
-	n = read(clisock,buffer,255);
+	n = read(clisock,buffer,PACKET_S);
 	if (n < 0)
 		error("ERROR reading from socket");
 		
