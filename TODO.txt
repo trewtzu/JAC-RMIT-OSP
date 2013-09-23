@@ -9,6 +9,7 @@ note that network based consts need to be put in to a protocal document.
 add input to select queue
 Add makefile
 Server isnt passing threadID correctly, so clients threads are miss reporting who they are.
+Make queue thread safe (Cory)
 
 should be done:
 networking needs to me made cleaner in client
