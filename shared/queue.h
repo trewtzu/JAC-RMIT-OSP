@@ -19,10 +19,11 @@ struct qnode
 
 typedef struct
 {
-  qnode_t *head;  /* Pointer to the head of the queue */
-  qnode_t *foot;  /* Pointer to the foot of the queue */
-  int count;      /* Number of nodes in the queue */
-  int size;       /* Size of the queue in bytes */
+  qnode_t *head;          /* Pointer to the head of the queue */
+  qnode_t *foot;          /* Pointer to the foot of the queue */
+  int count;              /* Number of nodes in the queue */
+  int size;               /* Size of the queue in bytes */
+  pthread_mutex_t mutex;  /* Mutex for thread safety */
 } queue_t;
 
 /* Initialise an empty queue */

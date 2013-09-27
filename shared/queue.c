@@ -79,6 +79,7 @@ new_queue ()
   new_queue->foot = NULL;
   new_queue->count = 0;
   new_queue->size = sizeof (*new_queue);
+  pthread_mutex_init (&(new_queue->mutex), NULL);
 
   return (new_queue);
 }
@@ -116,8 +117,10 @@ add_song (queue_t *queue, char *song)
   new_song = safe_strdup (song);
   
   new_node->song = new_song;
-
+  
+  pthread_mutex_lock (&(queue->mutex));
   insert_node (queue, new_node);
+  pthread_mutex_unlock (&(queue->mutex));
 
   return;
 }
@@ -134,7 +137,9 @@ retrieve_song (queue_t *queue)
 
   next_song = safe_strdup (queue->head->song);
  
+  pthread_mutex_lock (&(queue->mutex));
   remove_node (queue, queue->head);
+  pthread_mutex_unlock (&(queue->mutex));
 
   return (next_song);
 }
