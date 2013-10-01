@@ -10,7 +10,6 @@
 #include "../shared/queue.h"
 #include "../shared/protocol.h"
 
-
 /*
  * Simple error output, 'msg' should be the conext for the error
  */

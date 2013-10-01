@@ -3,6 +3,8 @@
 #include "../shared/util.h"
 #include "../shared/protocol.h"
 
+void print_logo();
 void simpleDisplay(char** trackList, int trackList_s, char** trackQueue, int trackQueue_s);
 void begin(int simple, int sockfd);
+
 #endif

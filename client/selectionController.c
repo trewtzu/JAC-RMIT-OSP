@@ -5,7 +5,6 @@ void begin(int simple, int sockfd){
 
 	int n;
 		char buffer[PACKET_S+1];
-
 		
 	//NOTE: Simeple interface is blocking!
 	if(simple==1){
@@ -20,10 +19,9 @@ void begin(int simple, int sockfd){
 				if (n < 0) 
 					error("ERROR writing to socket");
 
-
 				bzero(buffer,PACKET_S+1);
 
-				printf("Track List:\n");
+//			printf("Track List:\n");
 				while(1){
 
 					n = read(sockfd,buffer,PACKET_S);
@@ -31,14 +29,14 @@ void begin(int simple, int sockfd){
 						error("ERROR read from socket");
 					//TODO: this will need to be replaced by a const proto code
 					if( strcmp(buffer,END_OF_TRACKS) == 0){
-						printf("Done\n");
+//					printf("Done\n");
 						break;
 					}
 					add_song(listing, buffer);
-					printf("%s\n",buffer);
+//				printf("%s\n",buffer);
 				}	
 
-				printf("Queue List:\n");
+//			printf("Queue List:\n");
 				while(1){
 
 					n = read(sockfd,buffer,PACKET_S);
@@ -46,13 +44,12 @@ void begin(int simple, int sockfd){
 						error("ERROR read from socket");
 					//TODO: this will need to be replaced by a const proto code
 					if( strcmp(buffer,END_OF_QUEUE) == 0){
-						printf("Done\n");
+//					printf("Done\n");
 						break;
 					}
 					add_song(queue, buffer);
-					printf("%s\n",buffer);
+//			  printf("%s\n",buffer);
 				}
-
 
 
 
@@ -95,8 +92,10 @@ void begin(int simple, int sockfd){
 
 		int i=0;
 		int j=0;
+    
+    print_logo ();
 
-		printf("|%32s || %s\n", "Queue","Songs");
+		printf("|%32s || %s%26s\n", "Queue", "Songs", "|");
 		for(i=0; i<trackList_s; i++){
 			if(i<trackQueue_s)
 				printf("|%d: %-30s||",i+1,trackQueue[i]);
@@ -106,4 +105,23 @@ void begin(int simple, int sockfd){
 
 		}
 	}
+
+  void print_logo()
+  {
+    printf ("                    ___        ___      ___________\n");
+    printf ("                    \\  \\      /  /     |______    _|       \n");
+    printf ("                     \\  \\    /  /    __ _    |  |    \n");
+    printf ("                      \\  \\  /  /     |  |    |  |    \n");
+    printf ("                       \\  \\/  /      \\  \\____/  /  \n");
+    printf ("                        \\ __ / irtual \\_______ / ukebox    \n");
+    printf ("===================================================================\n\n");
+  }
+
+
+
+
+
+
+
+
 

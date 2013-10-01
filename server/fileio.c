@@ -5,7 +5,6 @@
  * * * * * * * * * * * * * * * * */
 
 #include "fileio.h"
-
 #define MAX_BUFF 100
 
 /* Generate a text file containing a list of all valid
@@ -13,7 +12,7 @@
 void
 read_directory ()
 {
-  system ("ls -1 music/*{.mp3,.wav} >music/list.txt 2>>music/log.txt");
+  system ("ls -1 music/*.wav >music/list.txt 2>>music/log.txt");
   system ("wc -l music/list.txt >music/count.txt 2>>music/log.txt");
 
   return; 

@@ -1,8 +1,8 @@
-/* * * * * * * * * * * * * * * * *
+/* * * * * * * * * * * * * * * *
  * Author:  Cory Mollison
  *          S3369723
  * Date:    September, 2013
- * * * * * * * * * * * * * * * * */
+ * * * * * * * * * * * * * * * */
 
 #ifndef QUEUE_H_
 #define QUEUE_H_

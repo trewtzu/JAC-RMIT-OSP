@@ -1,4 +1,4 @@
-/* * * * * * * * * * * * * * * * *
+/* * * * * * * * * * * * * * * *
  * Authors: Cory Mollison
  *          S3369723
  * 			Josh Trew
@@ -8,7 +8,7 @@
  * General listing of genrealist 
  * helper functions used between
  * both server and client.
- * * * * * * * * * * * * * * * * */
+ * * * * * * * * * * * * * * * */
 
 #ifndef UTIL_H_
 #define UTIL_H_

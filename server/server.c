@@ -7,7 +7,6 @@
  * Init design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
  */
 
-
 /*
  * TODO: need to add code to close socket before all mode of exit as i think it takes the network card a while to do it on its own.
  */
@@ -21,11 +20,11 @@
 queue_t *queue; 
 
 void *
-clientAction(int sock, int id);
+clientAction(void *args);
 void sendListings(int clisock, int id);
 
 /*
- * Simple error output, 'msg' should be the conext for the error
+ * Simple error output, 'msg' should be the context for the error
  */
 void error(const char *msg)
 {
@@ -104,27 +103,40 @@ int main(int argc, char *argv[])
 	
 
 	/*
-	 * Below is the threading loop, this needs to be modded to suit, but its pretty stright forward
-	 * */
+	 * Below is the threading loop, this needs to be modded to suit, but its 
+   * pretty stright forward
+	 */
 
 	
  	int thread_id=0;;
  	while(1)
 	{
-		printf("Preping thread %d...\n", thread_id);
-		
+		client_args_t *args = NULL;
+    void *arguments; 
+    printf("Preping thread %d...\n", thread_id);
+    		
+    args = safe_malloc (sizeof (client_args_t));
+
 		//i have no idea at all what cli_addr is used for
 		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen); //this is the core action of connection C to S
-		if (newsockfd < 0) 
+    //this is the core action of connection C to S
+		args->sock = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);		
+    if (args->sock < 0) 
 			error("ERROR on accept");
-		
+
+		args->id = thread_id;
+
+    arguments = args;
 
 		printf("Detaching Thread...");
-		pthread_t thread; //note, if we want to access the thread later we will need to store this somewhere
-		pthread_create(&thread,NULL,&clientAction,newsockfd,thread_id);	 //this core action of starting a thread, arg 3 is the func name it will start on, all past that are args to pass to that func
-		printf("Thread live\n");
-		
+		// note, if we want to access the thread later 
+    // we will need to store this somewhere
+    pthread_t thread; 		
+    // this core action of starting a thread, arg 3 is the func name 
+    // it will start on, all past that are args to pass to that func
+    pthread_create(&thread,NULL,&clientAction,arguments);	 	
+    
+    printf("Thread live\n");
 		thread_id++;
  	}
 
@@ -137,27 +149,30 @@ int main(int argc, char *argv[])
 /*
  * This is an action to be take by our thread, 
  */
-void *clientAction(int clisock, int id){
-	int n;
-	printf("Starting thread %d\n",id);
+void *clientAction(void *arguments){
+	client_args_t *args = NULL;
+  int n;
 	char buffer[PACKET_S+1];
 	bzero(buffer,PACKET_S+1);
 	
+  args = (client_args_t *) arguments;
+
+	printf("Starting thread %d\n", args->id);
 	
 	do{
-		n = read(clisock,buffer,PACKET_S);
+		n = read(args->sock,buffer,PACKET_S);
 		if (n < 0)
 			error("ERROR reading from socket");
 		
 		switch(atoi(buffer))
 		{
 			case 101:
-				printf("Start sending @ %d\n",id);
-				sendListings(clisock, id);
+				printf("Start sending @ %d\n",args->id);
+				sendListings(args->sock, args->id);
 				break;
 		
 			case 102:
-				printf("%d requesting queue change\n",id);
+				printf("%d requesting queue change\n",args->id);
 				break;
 			default:
 				printf("error in the buff, i got %s\n",buffer);
@@ -165,10 +180,6 @@ void *clientAction(int clisock, int id){
 		}
 		
 	}while(1);
-	
-
-	
-	
 	
 // 	while(1){
 // 		bzero(buffer,sizeof(buffer));
@@ -186,8 +197,8 @@ void *clientAction(int clisock, int id){
 // 
 // 	}
 	
-	printf("%d ending", id);
-	close(clisock);
+	printf("%d ending", args->id);
+	close(args->sock);
 }
 
 void sendListings(int clisock, int id){

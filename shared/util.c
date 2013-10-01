@@ -1,11 +1,11 @@
-/* * * * * * * * * * * * * * * * *
+/* * * * * * * * * * * * * * * *
  * Author:  Cory Mollison
  *          S3369723
  * Date:    September, 2013
  * General listing of genrealist 
  * helper functions used between
  * both server and client.
- * * * * * * * * * * * * * * * * */
+ * * * * * * * * * * * * * * * */
 
 #include "util.h"
 

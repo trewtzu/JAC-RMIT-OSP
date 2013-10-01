@@ -11,12 +11,10 @@
 
 /* Generate a text file containing a list of all valid
  * music files in the root music directory */
-void
-read_directory ();
+void read_directory ();
 
 /* Read in data from text file containing list of
  * available songs in root music directory */
-char **
-import_list ();
+char **import_list ();
 
 #endif
