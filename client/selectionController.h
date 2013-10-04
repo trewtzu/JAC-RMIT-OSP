@@ -4,7 +4,7 @@
 #include "../shared/protocol.h"
 
 void print_logo();
-void simpleDisplay(char** trackList, int trackList_s, char** trackQueue, int trackQueue_s);
+void simpleDisplay(char** list, char** queue);
 void begin(int simple, int sockfd);
 
 #endif
