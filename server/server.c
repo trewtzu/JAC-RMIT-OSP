@@ -15,12 +15,14 @@
 #include "../shared/util.h"
 #include "../shared/queue.h"
 #include "../shared/protocol.h"
+#include "../shared/wav.h"
 #include "fileio.h"
 
 queue_t *queue; 
 
 void *
 clientAction(void *args);
+void *beginStreaming(void *args);
 void sendListings(int clisock, int id);
 
 /*
@@ -37,7 +39,7 @@ void error(const char *msg)
  */
 void usage()
 {
-	fprintf(stdout,"Usage: server portNum");	
+	fprintf(stdout,"Usage: server portNum\n");	
 }
 
 
@@ -108,7 +110,8 @@ int main(int argc, char *argv[])
 	 */
 
 	
- 	int thread_id=0;;
+ 	int thread_id=0;
+  pthread_t streamThread;
  	while(1)
 	{
 		client_args_t *args = NULL;
@@ -137,6 +140,12 @@ int main(int argc, char *argv[])
     pthread_create(&thread,NULL,&clientAction,arguments);	 	
     
     printf("Thread live\n");
+
+    // If this is the first connection, begin streaming
+    if (thread_id == 0) {
+      pthread_create(&streamThread, NULL, beginStreaming, NULL);
+    }
+
 		thread_id++;
  	}
 
@@ -158,7 +167,7 @@ void *clientAction(void *arguments){
   args = (client_args_t *) arguments;
 
 	printf("Starting thread %d\n", args->id);
-	
+
 	do{
 		n = read(args->sock,buffer,PACKET_S);
 		if (n < 0)
@@ -174,6 +183,7 @@ void *clientAction(void *arguments){
 			case 102:
 				printf("%d requesting queue change\n",args->id);
 				break;
+
 			default:
 				printf("error in the buff, i got %s\n",buffer);
 				break;
@@ -199,6 +209,68 @@ void *clientAction(void *arguments){
 	
 	printf("%d ending", args->id);
 	close(args->sock);
+}
+
+void *beginStreaming(void *args)
+{
+  int sockfd, err, bytesSent;
+  struct addrinfo hints, *destInfo;
+  int broadcast = 1; /* Tell socket to enable broadcasting */
+  WavFile *wav;
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET; /* Force IPv4 */
+  hints.ai_socktype = SOCK_DGRAM;
+
+  err = getaddrinfo(BROADCAST_ADDR, STREAM_PORT, &hints, &destInfo);
+  if (err != 0)
+    error("ERROR getting stream address info");
+
+  sockfd = socket(destInfo->ai_family, destInfo->ai_socktype,
+    destInfo->ai_protocol);
+  if (sockfd == -1)
+    error("ERROR creating socket");
+
+  err = setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast,
+    sizeof broadcast);
+  if (err == -1)
+    error("ERROR setting sock opt");
+
+  wav = createWav("music/YoungBlood.wav");
+  if (!loadWavData(wav))
+    error("ERROR loading wave file");
+
+  /* Send data at approximately real-time */
+  int packetSize = 1470;
+  uint frameSize = getFrameSize(wav->format);
+  uint bps = wav->format->sampleRate * frameSize;
+  uint pps = bps / packetSize;
+  
+  int totalBytes = 0;
+  int bytesLeft = wav->data->size;
+  while (bytesLeft > 0)
+  {
+    int availBytes = packetSize;
+    if (bytesLeft < availBytes)
+      availBytes = bytesLeft;
+
+    bytesSent = sendto(sockfd, wav->data->data + totalBytes, packetSize, 0,
+        destInfo->ai_addr, destInfo->ai_addrlen);
+    if (bytesSent == -1)
+    {
+      error("ERROR sending stream data");
+    }
+
+    totalBytes += bytesSent;
+    bytesLeft -= bytesSent;
+
+    usleep((1.0 / pps) * 900000);
+  }
+
+  printf("Song finished\n");
+
+  freeaddrinfo(destInfo);
+  close(sockfd);
 }
 
 void sendListings(int clisock, int id){

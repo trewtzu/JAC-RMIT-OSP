@@ -193,6 +193,140 @@ bool readDataChunk(WavFile *wav, FILE *file)
   return true;
 }
 
+bool playWav(WavFile *wav)
+{
+  snd_pcm_t *handle;
+  snd_pcm_uframes_t periodFrames, framesWritten, framesLeft;
+  uint frameSize;
+  unsigned char *buffer;
+  long n;
+
+  handle = initWavPlayback(wav->format, &periodFrames);
+  if (handle == NULL)
+    return false;
+
+  frameSize = getFrameSize(wav->format);
+
+  /* Write all frames to the sound device */
+  framesWritten = 0;
+  framesLeft = wav->data->size / frameSize;
+  while (framesLeft > 0)
+  {
+    snd_pcm_uframes_t availFrames = 8 * periodFrames;
+    if (framesLeft < availFrames)
+    {
+      availFrames = framesLeft;
+    }
+
+    buffer = wav->data->data + (framesWritten * frameSize);
+
+    n = bufferWav(handle, buffer, availFrames);
+    if (n == -1)
+    {
+      break;
+    }
+    
+    framesWritten += n;
+    framesLeft -= n;
+  }
+
+  stopWavPlayback(handle);
+
+  return true;
+}
+
+snd_pcm_t *initWavPlayback(FormatChunk *format, snd_pcm_uframes_t *period)
+{
+  int err, dir;
+  uint exactRate;
+  snd_pcm_t *handle;
+  snd_pcm_hw_params_t *params;
+
+  /* Open PCM device for playback */
+  err = snd_pcm_open(&handle, "default", SND_PCM_STREAM_PLAYBACK, 0);
+  if (err < 0)
+  {
+    fprintf(stderr, "Error: Unable to open pcm device; %s\n",
+      snd_strerror(err));
+    return false;
+  }
+
+  /* Allocate hardware parameters object */
+  snd_pcm_hw_params_malloc(&params);
+
+  /* Load default hardware parameters */
+  snd_pcm_hw_params_any(handle, params);
+
+  /* Interleaved mode */
+  snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+
+  /* Signed 16-bit little endian */
+  snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+
+  /* Set number of audio channels to use */
+  snd_pcm_hw_params_set_channels(handle, params, format->numChannels);
+
+  /* Set the sample rate as close as possible */
+  exactRate = format->sampleRate;
+  snd_pcm_hw_params_set_rate_near(handle, params, &exactRate, &dir);
+  if (exactRate != format->sampleRate)
+  {
+      fprintf(stderr, "Unable to set rate to %u. Using %u instead.\n",
+          format->sampleRate, exactRate);
+  }
+
+  /* Write parameters to the driver */
+  err = snd_pcm_hw_params(handle, params);
+  if (err < 0)
+  {
+    fprintf(stderr, "Unable to set hardware parameters: %s",
+      snd_strerror(err));
+    snd_pcm_close(handle);
+    handle = NULL;
+  }
+
+  /* Get the number of frames in one period */
+  if (period != NULL)
+  {
+    snd_pcm_hw_params_get_period_size(params, period, &dir);
+  }
+
+  /* No longer need hw params */
+  snd_pcm_hw_params_free(params);
+
+  return handle;
+}
+
+void stopWavPlayback(snd_pcm_t *handle)
+{
+  snd_pcm_drain(handle);
+  snd_pcm_close(handle);
+}
+
+long bufferWav(snd_pcm_t *handle, void *buffer, snd_pcm_uframes_t numFrames)
+{
+  long framesWritten;
+
+  framesWritten = snd_pcm_writei(handle, buffer, numFrames);
+  if (framesWritten == -EPIPE)
+  {
+    fprintf(stderr, "Buffer underrun occurred\n");
+    snd_pcm_prepare(handle);
+  }
+  else if (framesWritten < 0)
+  {
+    fprintf(stderr, "Failed to write to pcm device: %s\n",
+        snd_strerror(framesWritten));
+    return -1;
+  }
+  else if (framesWritten != numFrames)
+  {
+    fprintf(stderr, "Short write occurred\n");
+  }
+
+  return framesWritten;
+}
+
 bool chunkIdCompare(char *id1, char *id2)
 {
   int i;
@@ -229,80 +363,10 @@ uint bytesToUint(FILE *file, uint n)
   return value;
 }
 
-bool playWav(WavFile *wav)
+uint getFrameSize(FormatChunk *format)
 {
-  int err, dir;
-  uint exactRate, frameSize;
-  snd_pcm_t *handle;
-  snd_pcm_hw_params_t *params;
-  snd_pcm_uframes_t numFrames;
+  int bytesPerSample = format->significantBPS / 8;
+  uint frameSize = bytesPerSample * format->numChannels;
 
-  /* Open PCM device for playback */
-  err = snd_pcm_open(&handle, "default", SND_PCM_STREAM_PLAYBACK, 0);
-  if (err < 0)
-  {
-    fprintf(stderr, "Error: Unable to open pcm device; %s\n",
-      snd_strerror(err));
-    return false;
-  }
-
-  /* Allocate hardware parameters object */
-  snd_pcm_hw_params_malloc(&params);
-
-  /* Load default hardware parameters */
-  snd_pcm_hw_params_any(handle, params);
-
-  /* Interleaved mode */
-  snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
-
-  /* Signed 16-bit little endian */
-  snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
-
-  /* Set number of audio channels to use */
-  snd_pcm_hw_params_set_channels(handle, params, wav->format->numChannels);
-
-  /* Set the sample rate as close as possible */
-  exactRate = wav->format->sampleRate;
-  snd_pcm_hw_params_set_rate_near(handle, params, &exactRate, &dir);
-  if (exactRate != wav->format->sampleRate) {
-      printf("Unable to set rate to %u. Using %u instead.\n",
-          wav->format->sampleRate, exactRate);
-  }
-
-  /* Write parameters to the driver */
-  err = snd_pcm_hw_params(handle, params);
-  if (err < 0)
-  {
-    fprintf(stderr, "Unable to set hardware parameters: %s",
-      snd_strerror(err));
-    snd_pcm_close(handle);
-    return false;
-  }
-
-  /* Calculate the size of 1 frame */
-  frameSize = wav->format->numChannels * 2;
-
-  /* Calulcate the number of frames in the data source */
-  numFrames = wav->data->size / frameSize;
-
-  /* Write all frames to sound device */
-  err = snd_pcm_writei(handle, wav->data->data, numFrames);
-  if (err < 0)
-  {
-    printf("Buffer underrun\n");
-    err = snd_pcm_recover(handle, err, 0);
-  }
-  if (err < 0)
-  {
-    printf("Failed to write to pcm device: %s\n", snd_strerror(err));
-    snd_pcm_close(handle);
-    return false;
-  }
-  if (err > 0 && err < (int)numFrames)
-    printf("Short write\n");
-
-  snd_pcm_drain(handle);
-  snd_pcm_close(handle);
-
-  return true;
+  return frameSize;
 }

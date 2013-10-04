@@ -21,9 +21,8 @@
 #define NBYTES_EXTRA_FORMAT     2   /* Size of 'extra format bytes' */
 
 typedef unsigned int uint;
-typedef struct format_chunk FormatChunk;
 
-struct format_chunk {
+typedef struct {
   uint size;
   uint compressionCode;
   uint numChannels;
@@ -31,7 +30,7 @@ struct format_chunk {
   uint averageBPS;
   uint blockAlign;
   uint significantBPS;
-};
+} FormatChunk;
 
 typedef struct {
   uint size;
@@ -53,6 +52,7 @@ typedef struct {
 /* Helper functions */
 bool chunkIdCompare(char *id1, char *id2);
 uint bytesToUint(FILE *file, uint n);
+uint getFrameSize(FormatChunk *format);
 
 /* Create / delete */
 WavFile* createWav(char *filename);
@@ -66,5 +66,8 @@ bool readDataChunk(WavFile *wav, FILE *file);
 
 /* Playback */
 bool playWav(WavFile *wav);
+snd_pcm_t *initWavPlayback(FormatChunk *format, snd_pcm_uframes_t *period);
+void stopWavPlayback(snd_pcm_t *handle);
+long bufferWav(snd_pcm_t *handle, void *buffer, snd_pcm_uframes_t numFrames);
 
 #endif

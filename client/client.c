@@ -9,6 +9,9 @@
 #include "../shared/util.h"
 #include "../shared/queue.h"
 #include "../shared/protocol.h"
+#include "../shared/wav.h"
+
+void *beginPlayback(void *args);
 
 /*
  * Simple error output, 'msg' should be the conext for the error
@@ -64,8 +67,6 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
 
-
-
 	//begin(1);
 	//	char* sL[] = {"song 1","song 2","song 3","song 4"};
 	//	char* sQ[] = {"Qsong 1","Qsong 2","Qsong 3","Qsong 4"};
@@ -105,6 +106,9 @@ int main(int argc, char *argv[])
 	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		error("ERROR connecting");
 
+  pthread_t playbackThread;
+  pthread_create(&playbackThread, NULL, beginPlayback, NULL); 
+
 	/*
 	 * At this point client behaviour starts
 	 */
@@ -120,5 +124,102 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+void *beginPlayback(void *args)
+{
+  int sockfd, err, numBytes;
+  struct addrinfo hints, *servInfo;
 
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_PASSIVE;
 
+  err = getaddrinfo(NULL, STREAM_PORT, &hints, &servInfo);
+  if (err != 0)
+    error("ERROR getting server address info");
+
+  sockfd = socket(servInfo->ai_family, servInfo->ai_socktype,
+    servInfo->ai_protocol);
+  if (sockfd == -1)
+    error("ERROR creating socket");
+
+  err = bind(sockfd, servInfo->ai_addr, servInfo->ai_addrlen);
+  if (err == -1)
+    error("ERROR binding socket");
+
+  freeaddrinfo(servInfo);
+
+  FormatChunk format;
+  format.size = 16;
+  format.compressionCode = 0;
+  format.numChannels = 2;
+  format.sampleRate = 44100;
+  format.averageBPS = 0;
+  format.blockAlign = 0;
+  format.significantBPS = 16;
+
+  snd_pcm_uframes_t periodFrames = 1024;
+  snd_pcm_t *handle = initWavPlayback(&format, &periodFrames);
+
+  uint frameSize = getFrameSize(&format);
+  
+  /* Initally buffer 10 periods of audio */
+  int bufferSize = periodFrames * 10 * frameSize;
+  char *buffer = safe_malloc(sizeof(char) * bufferSize);
+  int packetSize = 1470;
+
+  int byteCount = 0;
+  while (byteCount + packetSize < bufferSize)
+  {
+    numBytes = recvfrom(sockfd, buffer + byteCount, packetSize, 0, NULL, NULL);
+    if (numBytes == -1)
+      error("ERROR receiving streaming data");
+    else if (numBytes == 0)
+      error("ERROR connection to server closed");
+
+    byteCount += numBytes;
+  }
+
+  /* Buffer full, so write all the frames we have to sound device */
+  int wholeFrames = byteCount / frameSize; /* Integer division */
+  bufferWav(handle, buffer, wholeFrames);
+  int leftoverBytes = byteCount - (wholeFrames * frameSize);
+  
+  /* Shift leftover bytes to start of buffer */
+  int i;
+  for (i = 0; i < leftoverBytes; ++i)
+  {
+    buffer[i] = buffer[wholeFrames * frameSize + i];
+  }
+
+  byteCount = leftoverBytes;
+  while (1)
+  {
+    /* Buffer at least a period worth */
+    while(byteCount < periodFrames * frameSize * 5)
+    {
+    numBytes = recvfrom(sockfd, buffer + byteCount, packetSize, 0, NULL, NULL);
+    if (numBytes == -1)
+      error("ERROR receiving streaming data");
+    else if (numBytes == 0)
+      error("ERROR connection to server closed");
+
+    byteCount += numBytes;
+    }
+
+    wholeFrames = byteCount / frameSize;
+    bufferWav(handle, buffer, wholeFrames);
+    leftoverBytes = byteCount - (wholeFrames * frameSize);
+    
+    for (i = 0; i < leftoverBytes; ++i)
+    {
+      buffer[i] = buffer[wholeFrames * frameSize + i];
+    }
+
+    byteCount = leftoverBytes;
+  }
+
+  stopWavPlayback(handle);
+
+  close(sockfd);
+}
