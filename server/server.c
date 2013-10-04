@@ -8,7 +8,8 @@
  */
 
 /*
- * TODO: need to add code to close socket before all mode of exit as i think it takes the network card a while to do it on its own.
+ * TODO: need to add code to close socket before all mode of 
+ * exit as i think it takes the network card a while to do it on its own.
  */
 
 
@@ -18,10 +19,11 @@
 #include "../shared/wav.h"
 #include "fileio.h"
 
-queue_t *queue; 
+queue_t *queue;
+queue_t *list;
 
-void *
-clientAction(void *args);
+
+void *clientAction(void *args);
 void *beginStreaming(void *args);
 void sendListings(int clisock, int id);
 
@@ -45,12 +47,11 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-
+  char **all_songs;
 	int sockfd, newsockfd, portNum;
 	socklen_t clilen;
-
 	struct sockaddr_in serv_addr, cli_addr;
-	int n;
+	int n, i;
 
 	if (argc < 2) {
 		fprintf(stderr,"ERROR, no port provided\n");
@@ -89,16 +90,16 @@ int main(int argc, char *argv[])
 	/*
 	 * Here we will prep our song listings and queue
 	 */
-	
-	
 	queue = new_queue (); //NOTE THIS IS THE GLOBEL SONG QUEUE
-	read_directory();
-	
-	
-	//NOTE: testing code
-	char ** all_songs;
+  list = new_queue ();  
+  read_directory ();
 	all_songs = import_list ();
-	int i;
+	
+  /* Populate complete song list */
+  for (i = 0; all_songs[i] != NULL; i++)
+    add_song (list, all_songs[i]);
+
+  /* TEST Populate queue */
 	for (i = 0; all_songs[i] != NULL; i++)
 		if(i%2==0)
 			add_song (queue, all_songs[i]);
@@ -136,7 +137,7 @@ int main(int argc, char *argv[])
     // we will need to store this somewhere
     pthread_t thread; 		
     // this core action of starting a thread, arg 3 is the func name 
-    // it will start on, all past that are args to pass to that func
+    // it will start on, after that is the struct of args to pass to that func
     pthread_create(&thread,NULL,&clientAction,arguments);	 	
     
     printf("Thread live\n");
@@ -159,7 +160,8 @@ int main(int argc, char *argv[])
  * This is an action to be take by our thread, 
  */
 void *clientAction(void *arguments){
-	client_args_t *args = NULL;
+	
+  client_args_t *args = NULL;
   int n;
 	char buffer[PACKET_S+1];
 	bzero(buffer,PACKET_S+1);
@@ -190,22 +192,6 @@ void *clientAction(void *arguments){
 		}
 		
 	}while(1);
-	
-// 	while(1){
-// 		bzero(buffer,sizeof(buffer));
-// 		
-// 		
-// 		
-// 		n = read(clisock,buffer,255);
-// 		
-// 		if (n < 0)
-// 			error("ERROR reading from socket");
-// 		
-// 		printf("Client %d:: %s\n",id,buffer);
-// 		
-// 		
-// 
-// 	}
 	
 	printf("%d ending", args->id);
 	close(args->sock);
@@ -275,41 +261,33 @@ void *beginStreaming(void *args)
 
 void sendListings(int clisock, int id){
 
-	int n;
+	int n, i;
 	char buffer[PACKET_S+1];
-	char** listing = import_list();
-	char** q_songs = get_list(queue);
 	
+  char** all_songs = get_list(list);
+  char** q_songs = get_list(queue);
 	
-	int i;
-	for (i = 0; listing[i] != NULL; i++)
+  /* Write song count to client */
+  n = write(clisock, &list->count, PACKET_S);
+
+  /* Write each song title to client */
+	for (i = 0; all_songs[i] != NULL; i++)
 	{
-		printf ("Writing %s to %d\n", listing[i], id);
-		n = write(clisock,listing[i],PACKET_S);
+		n = write(clisock,all_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	}	
 	
-	printf("Sending Track ending\n");
-	n = write(clisock,END_OF_TRACKS,PACKET_S);
-	if (n < 0)
-		error("ERROR writing to socket");
-	
-	
+	/* Write queue count to client */
+  n = write(clisock, &queue->count, PACKET_S);
+
+  /* Write each song title to client */
 	for (i = 0; q_songs[i] != NULL; i++)
 	{
-		printf ("Writing %s to %d\n", q_songs[i], id);
 		n = write(clisock,q_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	}	
-	
-	printf("Sending queue ending\n");
-	n = write(clisock,END_OF_QUEUE,PACKET_S);
-	if (n < 0)
-		error("ERROR writing to socket");
-	
-	
 	
 	printf("waiting for reply\n");
 	n = read(clisock,buffer,PACKET_S);
