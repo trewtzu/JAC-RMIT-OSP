@@ -1,12 +1,11 @@
 CC = gcc
-CFLAGS = -c
+CFLAGS = -c -g
 
-OBJS = util.o queue.o wav.o
+OBJS = util.o wav.o
 
 all: $(OBJS)
 
 util.o: util.c util.h
-queue.o: queue.c queue.h
 wav.o: wav.c wav.h
 
 %.o: %.c
