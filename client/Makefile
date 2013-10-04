@@ -3,7 +3,7 @@ EXE = client
 OBJS = client.o selectionController.o ../shared/util.o ../shared/queue.o ../shared/wav.o
 
 CC = gcc
-CFLAGS = -c
+CFLAGS = -c -g
 LDFLAGS = -lpthread -lasound
 
 all: $(EXE)
