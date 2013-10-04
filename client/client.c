@@ -67,13 +67,6 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
 
-	//begin(1);
-	//	char* sL[] = {"song 1","song 2","song 3","song 4"};
-	//	char* sQ[] = {"Qsong 1","Qsong 2","Qsong 3","Qsong 4"};
-	//	simpleDisplay(sL,4,sQ,4);
-
-
-
 	if (argc < 3) {
 		fprintf(stderr,"usage %s hostname port\n", argv[0]);
 		exit(0);
@@ -109,14 +102,8 @@ int main(int argc, char *argv[])
   pthread_t playbackThread;
   pthread_create(&playbackThread, NULL, beginPlayback, NULL); 
 
-	/*
-	 * At this point client behaviour starts
-	 */
-	printf("Starting client payload\n\n");
-
+	//At this point client behaviour starts
 	begin(1, sockfd);
-
-
 
 	sleep(10);
 
