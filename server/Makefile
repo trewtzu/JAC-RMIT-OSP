@@ -1,9 +1,9 @@
 EXE = server
 
-OBJS = server.o fileio.o ../shared/util.o ../shared/queue.o ../shared/wav.o
+OBJS = server.o fileio.o queue.o ../shared/util.o ../shared/wav.o
 
 CC = gcc
-CFLAGS = -c
+CFLAGS = -c -g
 LDFLAGS = -lpthread -lasound
 
 all: $(EXE)
@@ -13,6 +13,7 @@ $(EXE): shared $(OBJS)
 
 server.o: server.c
 fileio.o: fileio.c fileio.h
+queue.o: queue.c queue.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
