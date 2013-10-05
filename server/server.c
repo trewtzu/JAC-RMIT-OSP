@@ -220,38 +220,50 @@ void *beginStreaming(void *args)
   if (err == -1)
     error("ERROR setting sock opt");
 
-  wav = createWav("music/YoungBlood.wav");
-  if (!loadWavData(wav))
-    error("ERROR loading wave file");
-
-  /* Send data at approximately real-time */
-  int packetSize = 1470;
-  uint frameSize = getFrameSize(wav->format);
-  uint bps = wav->format->sampleRate * frameSize;
-  uint pps = bps / packetSize;
-  
-  int totalBytes = 0;
-  int bytesLeft = wav->data->size;
-  while (bytesLeft > 0)
+  /* Begin streaming songs from the queue */
+  while (1)
   {
-    int availBytes = packetSize;
-    if (bytesLeft < availBytes)
-      availBytes = bytesLeft;
+    char *songName = retrieve_song(queue);
+    printf("Loading song: %s\n", songName);
 
-    bytesSent = sendto(sockfd, wav->data->data + totalBytes, packetSize, 0,
-        destInfo->ai_addr, destInfo->ai_addrlen);
-    if (bytesSent == -1)
+    if (songName == NULL)
+      error("ERROR queue is empty");
+
+    wav = createWav(songName);
+    if (!loadWavData(wav))
+      error("ERROR loading wave file");
+
+    /* Send data at approximately real-time */
+    int packetSize = 1470;
+    uint frameSize = getFrameSize(wav->format);
+    uint bps = wav->format->sampleRate * frameSize;
+    uint pps = bps / packetSize;
+    
+    int totalBytes = 0;
+    int bytesLeft = wav->data->size;
+    while (bytesLeft > 0)
     {
-      error("ERROR sending stream data");
+      int availBytes = packetSize;
+      if (bytesLeft < availBytes)
+        availBytes = bytesLeft;
+
+      bytesSent = sendto(sockfd, wav->data->data + totalBytes, packetSize, 0,
+          destInfo->ai_addr, destInfo->ai_addrlen);
+      if (bytesSent == -1)
+      {
+        error("ERROR sending stream data");
+      }
+
+      totalBytes += bytesSent;
+      bytesLeft -= bytesSent;
+
+      usleep((1.0 / pps) * 900000);
     }
 
-    totalBytes += bytesSent;
-    bytesLeft -= bytesSent;
-
-    usleep((1.0 / pps) * 900000);
+    printf("Song finished\n");
+    deleteWav(wav);
+    free(songName);
   }
-
-  printf("Song finished\n");
 
   freeaddrinfo(destInfo);
   close(sockfd);
