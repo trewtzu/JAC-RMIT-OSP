@@ -28,8 +28,11 @@
 #include <netdb.h> 
 
 
-#include "../server/queue.h"
+<<<<<<< HEAD
+#include "queue.h"
 
+=======
+>>>>>>> 7f4dca5ce21b8ca8c124b2ae1ec9836c0a57f442
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
 #define MAX_BUFF 100
 
