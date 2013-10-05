@@ -1,7 +1,2 @@
-music/song 1.wav
-music/song 2.wav
-music/song 3.wav
-music/song 4.wav
-music/song 5.wav
-music/song 6.wav
-music/YoungBlood.wav
+music/Beck - Cellphone's Dead.wav
+music/Metallica - Enter Sandman.wav
