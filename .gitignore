@@ -1,6 +1,12 @@
 # Object files
 *.o
 
+# Merge Backups
+*.orig
+
+# Lists and Logs
+*.txt
+
 # Libraries
 *.lib
 *.a
