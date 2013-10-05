@@ -28,10 +28,10 @@
 #include <netdb.h> 
 
 
-#include "queue.h"
+#include "../server/queue.h"
 
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
-
+#define MAX_BUFF 100
 
 /* Create a new block of memory with error checking.
  * Return value should be free'd by calling function.

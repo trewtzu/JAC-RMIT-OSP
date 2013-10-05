@@ -5,7 +5,6 @@
  * * * * * * * * * * * * * * * * */
 
 #include "fileio.h"
-#define MAX_BUFF 100
 
 /* Generate a text file containing a list of all valid
  * music files in the root music directory */
