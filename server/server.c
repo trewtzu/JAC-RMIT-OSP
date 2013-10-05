@@ -14,10 +14,7 @@
 
 
 #include "../shared/util.h"
-<<<<<<< HEAD
 #include "queue.h"
-=======
->>>>>>> 7f4dca5ce21b8ca8c124b2ae1ec9836c0a57f442
 #include "../shared/protocol.h"
 #include "../shared/wav.h"
 #include "fileio.h"
