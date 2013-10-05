@@ -21,45 +21,6 @@ void error(const char *msg)
 	exit(0);
 }
 
-
-/*
- * note, this is a total fake population system for testing
- */
-void fakepop(char*** trackList_ptr, char*** trackQueue_ptr){
-
-	int total_tracks = 9;
-	int queue_size =5;
-
-	int MAX_TITLE_LEN = 64;
-
-	char** trackList = *trackList_ptr ;
-	char** trackQueue = *trackQueue_ptr;
-
-	int i;
-	for(i=0; i <total_tracks; i++){
-		trackList[i] = malloc(MAX_TITLE_LEN * sizeof(char));
-		bzero(trackList[i],sizeof(trackList[i]));
-		sprintf(trackList[i],"song%d",i);
-	}
-
-	printf("%s\n",trackList[1]);
-
-
-
-	for(i=0; i <queue_size; i++){
-		trackQueue[i] = malloc(MAX_TITLE_LEN * sizeof(char));
-		bzero(trackQueue[i],sizeof(trackQueue[i]));
-		sprintf(trackQueue[i],"song%d",i);
-	}
-
-	printf("%s\n",trackQueue[1]);
-
-	//    trackList_ptr = trackList;
-	//    trackQueue_ptr = trackQueue;
-
-}
-
-
 int main(int argc, char *argv[])
 {
 	int sockfd, portno, n;
