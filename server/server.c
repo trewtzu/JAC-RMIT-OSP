@@ -14,9 +14,9 @@
 
 
 #include "../shared/util.h"
-#include "../shared/queue.h"
 #include "../shared/protocol.h"
 #include "../shared/wav.h"
+#include "queue.h"
 #include "fileio.h"
 
 queue_t *queue;

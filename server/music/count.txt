@@ -1,1 +1,1 @@
-8 music/list.txt
+7 music/list.txt
