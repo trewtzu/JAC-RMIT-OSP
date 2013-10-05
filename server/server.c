@@ -100,9 +100,7 @@ int main(int argc, char *argv[])
     add_song (list, all_songs[i]);
 
   /* TEST Populate queue */
-	for (i = 0; all_songs[i] != NULL; i++)
-		if(i%2==0)
-			add_song (queue, all_songs[i]);
+	add_song (queue, all_songs[0]);
 	
 
 	/*
