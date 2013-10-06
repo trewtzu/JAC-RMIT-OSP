@@ -136,12 +136,20 @@ retrieve_song (queue_t *queue)
     return (NULL);
 
   next_song = safe_strdup (queue->head->song);
- 
+
+  return (next_song);
+}
+
+void
+update_queue (queue_t *queue)
+{
+  assert (queue);
+
   pthread_mutex_lock (&(queue->mutex));
   remove_node (queue, queue->head);
   pthread_mutex_unlock (&(queue->mutex));
 
-  return (next_song);
+  return;
 }
 
 char**

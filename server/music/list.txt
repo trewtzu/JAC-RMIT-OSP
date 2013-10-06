@@ -1,2 +1,3 @@
-music/Beck - Cellphone's Dead.wav
-music/Metallica - Enter Sandman.wav
+music/CellphonesDead.wav
+music/FutureStartsSlow.wav
+music/ThereThere.wav

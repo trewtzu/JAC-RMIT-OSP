@@ -3,8 +3,10 @@
 #include "../shared/util.h"
 #include "../shared/protocol.h"
 
+void begin(int sockfd);
+void list_request(int sockfd);
+void list_print(char** list, char** queue);
+void print_menu();
 void print_logo();
-void simpleDisplay(char** list, char** queue);
-void begin(int simple, int sockfd);
 
 #endif

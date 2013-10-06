@@ -60,13 +60,15 @@ int main(int argc, char *argv[])
 		error("ERROR connecting");
 
   pthread_t playbackThread;
-  pthread_create(&playbackThread, NULL, beginPlayback, NULL); 
-
+  pthread_create(&playbackThread, NULL, beginPlayback, NULL);
+  
 	//At this point client behaviour starts
-	begin(1, sockfd);
-
+	begin(sockfd);
+  
+  printf("About to sleep");
 	sleep(10);
-
+  
+  printf ("Closing Socket");
 	close(sockfd);
 	return 0;
 }

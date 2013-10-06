@@ -97,10 +97,15 @@ int main(int argc, char *argv[])
 	
   /* Populate complete song list */
   for (i = 0; all_songs[i] != NULL; i++)
+  {  
     add_song (list, all_songs[i]);
+    printf ("%s\n", all_songs[i]);
+  }
 
   /* TEST Populate queue */
-	add_song (queue, all_songs[0]);
+	printf("Populating queue with %s\n", all_songs[0]);
+  add_song (queue, all_songs[0]);
+  printf("queue count after population = %d\n", queue->count);
 	
 
 	/*
@@ -149,6 +154,7 @@ int main(int argc, char *argv[])
  	}
 
 	//close the socket
+  printf ("Closing socket..");
 	close(sockfd);
 	return 0;
 }
@@ -160,14 +166,35 @@ int main(int argc, char *argv[])
 void *clientAction(void *arguments){
 	
   client_args_t *args = NULL;
-  int n;
+  int n, choice;
+  char *message;
 	char buffer[PACKET_S+1];
-	bzero(buffer,PACKET_S+1);
+	
+  bzero(buffer,PACKET_S+1);
 	
   args = (client_args_t *) arguments;
 
 	printf("Starting thread %d\n", args->id);
 
+  do
+  {
+    n = read(args->sock, buffer, PACKET_S);
+    if (n < 0)
+      error("ERROR reading from socket");
+
+    message = safe_strdup (buffer);
+    choice = atoi(message);
+    
+    if (choice == 101)
+    {
+      printf ("Sending Listings to sock: %d and with id: %d\n", args->sock, args->id);
+      sendListings(args->sock, args->id);
+      printf ("Finished Sending Listings\n");
+      bzero(buffer,PACKET_S+1);
+    }
+  
+  } while(1);
+/*
 	do{
 		n = read(args->sock,buffer,PACKET_S);
 		if (n < 0)
@@ -188,9 +215,8 @@ void *clientAction(void *arguments){
 				printf("error in the buff, i got %s\n",buffer);
 				break;
 		}
-		
 	}while(1);
-	
+*/	
 	printf("%d ending", args->id);
 	close(args->sock);
 }
@@ -261,6 +287,7 @@ void *beginStreaming(void *args)
     }
 
     printf("Song finished\n");
+    update_queue(queue);
     deleteWav(wav);
     free(songName);
   }
@@ -287,8 +314,10 @@ void sendListings(int clisock, int id){
 		if (n < 0)
 			error("ERROR writing to socket");
 	}	
+
+  printf("queue count = %d\n", queue->count);	
 	
-	/* Write queue count to client */
+  /* Write queue count to client */
   n = write(clisock, &queue->count, PACKET_S);
 
   /* Write each song title to client */
@@ -299,12 +328,12 @@ void sendListings(int clisock, int id){
 			error("ERROR writing to socket");
 	}	
 	
-	printf("waiting for reply\n");
+/*	
+  printf("waiting for reply\n");
 	n = read(clisock,buffer,PACKET_S);
 	if (n < 0)
 		error("ERROR reading from socket");
 		
-	printf("Client %d:: %s\n",id,buffer);
-	
+	printf("Client %d:: %s\n",id,buffer);	
+  */
 }
-

@@ -42,6 +42,10 @@ add_song (queue_t *queue, char *song);
 char *
 retrieve_song (queue_t *queue);
 
+/* Remove song at head of queue after playback */
+void
+update_queue (queue_t *queue);
+
 /* Retrieve a list of all songs in queue */
 char **
 get_list (queue_t *queue);
