@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <math.h>
 
 #include <netdb.h> 
 

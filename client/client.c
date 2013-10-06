@@ -12,9 +12,7 @@
 
 void *beginPlayback(void *args);
 
-/*
- * Simple error output, 'msg' should be the conext for the error
- */
+/* Simple error output with context */
 void error(const char *msg)
 {
 	perror(msg);
@@ -32,45 +30,40 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	//grab the port
+	/* Grab the port */
 	portno = atoi(argv[2]);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) 
 		error("ERROR opening socket");
 
-	//grab the ip
+	/* Grab the ip */
 	server = gethostbyname(argv[1]);
 	if (server == NULL) {
 		fprintf(stderr,"ERROR, no such host\n");
 		exit(0);
 	}
 
-	//Prep the connection rules
+	/* Prep the connection rules */
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 
-	//NOTE: this is deprecated. it will need to be replaced with a macro
 	bcopy((char *)server->h_addr, 
 			(char *)&serv_addr.sin_addr.s_addr,
 			server->h_length);
 	serv_addr.sin_port = htons(portno);
 
-	//and connect
 	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		error("ERROR connecting");
 
   pthread_t playbackThread;
   pthread_create(&playbackThread, NULL, beginPlayback, NULL);
   
-	//At this point client behaviour starts
-	begin(sockfd);
+	/* Begin client behaviour */
+  begin(sockfd);
   
-  printf("About to sleep");
-	sleep(10);
-  
-  printf ("Closing Socket");
 	close(sockfd);
-	return 0;
+	
+  return 0;
 }
 
 void *beginPlayback(void *args)

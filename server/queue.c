@@ -125,6 +125,46 @@ add_song (queue_t *queue, char *song)
   return;
 }
 
+int
+queue_song (queue_t *queue, queue_t *list, int index)
+{
+  int i = 1;
+  qnode_t *node = NULL;
+
+  assert (queue);
+  assert (list);
+
+  if (index < 1 || index > list->count)
+    return 0;
+  
+  node = list->head;
+  while (node != NULL && i < index)
+  {
+    node = node->next;
+    ++i;
+  }
+
+  if (node != NULL)
+    add_song (queue, node->song);
+
+  return 1;
+}
+
+void
+auto_queue (queue_t *queue, queue_t *list)
+{
+  int index;
+
+  assert (queue);
+  assert (list);
+  
+  srand(time(NULL));
+  index = ((rand() % list->count) + 1);
+  queue_song (queue, list, index);
+
+  return;
+}
+
 char *
 retrieve_song (queue_t *queue)
 {
@@ -173,23 +213,4 @@ get_list (queue_t *queue)
   list[i] = NULL;
 
   return (list);
-}
-
-void
-print_queue (queue_t *queue)
-{
-  qnode_t *node = NULL;
-  int i;
-
-  node = queue->head;
-
-  for (i = 1; node != NULL; i++)
-  {
-    printf ("Track %d: %s\n", i, node->song);
-    node = node->next;
-  }
-  
-  printf ("\n");
-
-  return;
 }

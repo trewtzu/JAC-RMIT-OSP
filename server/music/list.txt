@@ -1,3 +1,7 @@
 music/CellphonesDead.wav
+music/DertyDsThang.wav
 music/FutureStartsSlow.wav
+music/ImpossibleGermany.wav
+music/Stylo.wav
+music/TheHeinrichManeuver.wav
 music/ThereThere.wav

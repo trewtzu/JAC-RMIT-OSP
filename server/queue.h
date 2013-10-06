@@ -38,6 +38,14 @@ delete_queue (queue_t *queue);
 void
 add_song (queue_t *queue, char *song);
 
+/* Add a song to the queue from the list of all songs */
+int
+queue_song (queue_t *queue, queue_t *list, int index);
+
+/* Add random song to queue if empty */
+void
+auto_queue (queue_t *queue, queue_t *list);
+
 /* Retrieve song at head of queue for playback */
 char *
 retrieve_song (queue_t *queue);
@@ -49,9 +57,5 @@ update_queue (queue_t *queue);
 /* Retrieve a list of all songs in queue */
 char **
 get_list (queue_t *queue);
-
-/* Print list of all songs in queue */
-void
-print_queue (queue_t *queue);
 
 #endif
