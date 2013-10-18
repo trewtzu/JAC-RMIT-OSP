@@ -1,8 +1,10 @@
-/* * * * * * * * * * * * * * * * *
- * Author:  Cory Mollison
- *          S3369723
- * Date:    September, 2013
- * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
+ *
+ * Date:    October, 2013
+ * * * * * * * * * * * * * * * * * * * * * */
 
 #include "fileio.h"
 

@@ -1,14 +1,10 @@
-/* * * * * * * * * * * * * * * *
- * Authors: Cory Mollison
- *          S3369723
- * 			Josh Trew
- * 			S3237464
- * Date:    September, 2013
- * 
- * General listing of genrealist 
- * helper functions used between
- * both server and client.
- * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
+ *
+ * Date:    October, 2013
+ * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef UTIL_H_
 #define UTIL_H_
@@ -27,8 +23,6 @@
 #include <math.h>
 
 #include <netdb.h> 
-
-#include "../server/queue.h"
 
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
 #define MAX_BUFF 100

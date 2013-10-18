@@ -1,8 +1,10 @@
-/* * * * * * * * * * * * * * * *
- * Author:  Cory Mollison
- *          S3369723
- * Date:    September, 2013
- * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
+ *
+ * Date:    October, 2013
+ * * * * * * * * * * * * * * * * * * * * * */
 
 #include "queue.h"
 
@@ -166,7 +168,7 @@ auto_queue (queue_t *queue, queue_t *list)
 }
 
 char *
-retrieve_song (queue_t *queue)
+retrieve_song (queue_t *queue, queue_t *list)
 {
   char *next_song = NULL;
 
@@ -176,6 +178,9 @@ retrieve_song (queue_t *queue)
     return (NULL);
 
   next_song = safe_strdup (queue->head->song);
+  
+  if (queue->count == 1)
+    auto_queue(queue, list);
 
   return (next_song);
 }

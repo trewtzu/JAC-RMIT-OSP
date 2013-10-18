@@ -1,8 +1,10 @@
-/* * * * * * * * * * * * * * * *
- * Author:  Cory Mollison
- *          S3369723
- * Date:    September, 2013
- * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
+ *
+ * Date:    October, 2013
+ * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef QUEUE_H_
 #define QUEUE_H_
@@ -48,7 +50,7 @@ auto_queue (queue_t *queue, queue_t *list);
 
 /* Retrieve song at head of queue for playback */
 char *
-retrieve_song (queue_t *queue);
+retrieve_song (queue_t *queue, queue_t *list);
 
 /* Remove song at head of queue after playback */
 void

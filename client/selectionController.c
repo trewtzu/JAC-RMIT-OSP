@@ -1,3 +1,11 @@
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
+ *
+ * Date:    October, 2013
+ * * * * * * * * * * * * * * * * * * * * * */
+
 #include "selectionController.h"
 
 void begin(int sockfd)
@@ -5,7 +13,6 @@ void begin(int sockfd)
   char selection[PACKET_S+1];
 	int sock;
   int choice, valid, result;
-  int total_songs;
   sock = sockfd;
 
   print_logo();
@@ -30,19 +37,18 @@ void begin(int sockfd)
       else if (!isdigit(selection[0]))
         valid = 0;
     
-
       choice = atoi(selection);
     
       switch (choice)
       {
         case 1:
               /* Display songs to user and store total count */
-              total_songs = list_request(sock);
+              list_request(sock);
               break;
 
         case 2:
               /* Add user selection to queue for playback */
-              add_to_queue(sock, total_songs);      
+              add_to_queue(sock);      
               break;
 
         case 9:
@@ -59,7 +65,7 @@ void begin(int sockfd)
   }while (choice != 9);    
 }
 
-int list_request(int sockfd)
+void list_request(int sockfd)
 {
     char **allsongs;
     char **qsongs;
@@ -76,9 +82,11 @@ int list_request(int sockfd)
     bzero(buffer, PACKET_S+1);
         
     /* Get song count from server */
-    n = read(sockfd, &song_count, sizeof(int));
+    n = read(sockfd, buffer, PACKET_S);
     if (n < 0) 
       error("ERROR read from socket");
+    
+    song_count = atoi(buffer);
         
     allsongs = safe_malloc ((song_count + 1) * sizeof (char *));
 
@@ -96,9 +104,11 @@ int list_request(int sockfd)
     allsongs[i] = NULL;
         
     /* Get queue count from server */
-    n = read(sockfd, &q_count, sizeof(int));
+    n = read(sockfd, buffer, PACKET_S);
     if (n < 0) 
       error("ERROR read from socket");
+    
+    q_count = atoi(buffer);
         
     qsongs = safe_malloc ((q_count + 1) * sizeof (char *));
         
@@ -115,48 +125,52 @@ int list_request(int sockfd)
     /* NULL terminate array */
     qsongs[i] = NULL;
 
-    n = write(sockfd,"ack",PACKET_S);
-
-    if (n < 0) 
-      error("ERROR writing to socket");
-
     list_print(allsongs, qsongs);
 
+    /* Free both song lists */
+    for (i = 0; allsongs[i] != NULL; i++)
+      free (allsongs[i]);
+    for (i = 0; qsongs[i] != NULL; i++)
+      free (qsongs[i]);
+    
     free (allsongs);
     free (qsongs);
 
-    return (song_count);
+    return;
 }
 
-void add_to_queue(int sockfd, int song_count)
+void add_to_queue(int sockfd)
 {	  
     int n, result;
     int song_choice;
-    char selection[PACKET_S+1];
+    char buffer[PACKET_S+1];
 
     printf ("\nEnter number of song to add: ");
-    fgets(selection, PACKET_S, stdin);
+    fgets(buffer, PACKET_S, stdin);
 
-    if (strlen(selection) != 2 || !isdigit(selection[0]))
+    if (strlen(buffer) != 2 || !isdigit(buffer[0]))
     {
       printf("Invalid selection!\n");
       return;
     }
-
-    song_choice = atoi(selection);
     
+    /* Inform server that client will add to queue */
     n = write(sockfd, ADD_TO_QUEUE, PACKET_S);
     if (n < 0) 
       error("ERROR writing to socket"); 
     
-    n = write(sockfd, &song_choice, sizeof(int));
+    /* Give server the clients selection */
+    n = write(sockfd, buffer, PACKET_S);
     if (n < 0)
       error("ERROR writing to socket");
 
-    n = read(sockfd, &result, sizeof(int));
+    /* Server returns 0 for FAIL or 1 for SUCCESS */
+    n = read(sockfd, buffer, PACKET_S);
     if (n < 0)
       error("ERROR reading from socket");
     
+    result = atoi(buffer);
+
     if (!result)
       printf("Invalid selection!\n");
     else
@@ -170,20 +184,21 @@ void list_print(char** list, char** queue)
 
   int i=0;
 
-  printf("\n|%32s || %s%26s\n", "Queue", "Songs", "|");
+  printf("\n|%-40s ||%-40s |\n", "Queue", "Songs");
+  printf("|%-40s ||%-40s |\n", "-----", "-----");
 
   while (list[i] != NULL && queue[i] != NULL)
   {
-    printf("|%d: %-30s||", i+1, queue[i]);
-    printf("%d%30s|\n",i+1,list[i]);
+    printf("|%d: %-38s||", i+1, queue[i]);
+    printf("%d: %-38s|\n",i+1,list[i]);
     i++;
   }
   if (list[i] != NULL)
   {
     while (list[i] != NULL)
     {
-      printf("|%-33s||"," ");
-      printf("%d%30s|\n",i+1,list[i]);
+      printf("|%-41s||"," ");
+      printf("%d: %-38s|\n",i+1,list[i]);
       i++;
     }
   }
@@ -191,8 +206,8 @@ void list_print(char** list, char** queue)
   {
     while (queue[i] != NULL)
     {
-      printf("|%d: %-30s||",i+1,queue[i]);
-      printf("%31s|\n"," ");
+      printf("|%d: %-38s||",i+1,queue[i]);
+      printf("%-39s|\n"," ");
       i++;
     }
   }

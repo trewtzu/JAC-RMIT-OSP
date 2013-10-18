@@ -1,16 +1,13 @@
-/*
- * Lead Server for the JAC RaspberryPi Jukebox system
+/* * * * * * * * * * * * * * * * * * * * * *
+ * Authors: Cory Mollison   S3369723
+ *          Andrew O'conner S3333717
+ *          Josh Trew       S3237464
  *
+ * Date:    October, 2013
  *
- *
- *
- * Init design heavy based on  http://www.linuxhowtos.org/C_C++/socket.htm
- */
-
-/*
- * TODO: need to add code to close socket before all mode of 
- * exit as i think it takes the network card a while to do it on its own.
- */
+ * Init design based on:  
+ * http://www.linuxhowtos.org/C_C++/socket.htm
+ * * * * * * * * * * * * * * * * * * * * * */ 
 
 
 #include "../shared/util.h"
@@ -21,7 +18,6 @@
 
 queue_t *queue;
 queue_t *list;
-
 
 void *clientAction(void *args);
 void *beginStreaming(void *args);
@@ -105,7 +101,7 @@ int main(int argc, char *argv[])
  	while(1)
 	{
 		client_args_t *args = NULL;
-    printf("Preping thread %d\n", thread_id);
+    printf("Preparing thread %d\n", thread_id);
     		
     args = safe_malloc (sizeof (client_args_t));
 
@@ -166,24 +162,27 @@ void *clientAction(void *arguments){
     else if (n == 0)
       break;
     
-    message = safe_strdup (buffer);
-    choice = atoi(message);
-
+    choice = atoi(buffer);
+    
     if (choice == 101)
     {
       /* Pass queue information to client */
       sendListings(args->sock, args->id);
-      bzero(buffer,PACKET_S+1);
     }
     else if (choice == 102)
     {
-      n = read(args->sock, &add_song, sizeof(int));
+      /* Receive client selection */
+      n = read(args->sock, buffer, PACKET_S);
       if (n < 0)
         error("ERROR reading from socket");
+      
+      add_song = atoi(buffer);
+
       /* Add client selection to queue */
       result = queue_song(queue, list, add_song);
-
-      n = write(args->sock, &result, sizeof(int));
+      
+      sprintf(buffer, "%d", result);
+      n = write(args->sock, buffer, PACKET_S);
       if (n < 0)
         error("ERROR writing to socket");  
     }
@@ -220,8 +219,7 @@ void *beginStreaming(void *args)
   /* Begin streaming songs from the queue */
   while (1)
   {
-    char *songName = retrieve_song(queue);
-    printf("Loading song: %s\n", songName);
+    char *songName = retrieve_song(queue, list);
 
     if (songName == NULL)
       error("ERROR queue is empty");
@@ -254,7 +252,7 @@ void *beginStreaming(void *args)
       totalBytes += bytesSent;
       bytesLeft -= bytesSent;
 
-      usleep((1.0 / pps) * 900000);
+      usleep((1.0 / pps) * 955000);
     }
 
     update_queue(queue);
@@ -275,7 +273,9 @@ void sendListings(int clisock, int id){
   char** q_songs = get_list(queue);
 	
   /* Write song count to client */
-  n = write(clisock, &list->count, sizeof(int));
+  sprintf(buffer, "%d", list->count);
+  
+  n = write(clisock, buffer, PACKET_S);
   if (n < 0)
     error("ERROR writing to socket");
   
@@ -285,10 +285,13 @@ void sendListings(int clisock, int id){
 		n = write(clisock,all_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
-	}	
+	  usleep(10000);
+  }	
 
   /* Write queue count to client */
-  n = write(clisock, &queue->count, sizeof(int));
+  sprintf(buffer, "%d", queue->count);
+
+  n = write(clisock, buffer, PACKET_S);
 	if (n < 0)
 		error("ERROR writing to socket");
 
@@ -298,9 +301,17 @@ void sendListings(int clisock, int id){
 		n = write(clisock,q_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
-	}	
-	
-	n = read(clisock,buffer,PACKET_S);
-	if (n < 0)
-		error("ERROR reading from socket");
+	  usleep(10000);
+  }	
+  
+  /* Free both song lists */
+  for (i = 0; all_songs[i] != NULL; i++)
+    free (all_songs[i]);
+  for (i = 0; q_songs[i] != NULL; i++)
+    free (q_songs[i]);
+  
+  free (all_songs);
+  free (q_songs);
+
+  return;
 }
