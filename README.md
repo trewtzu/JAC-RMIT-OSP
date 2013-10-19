@@ -15,5 +15,5 @@ and the client with
 
 
 Authors: Cory Mollison   S3369723
-         Andrew O'conner S3333717
+         Andrew O'Connor S3333717
          Josh Trew       S3237464
