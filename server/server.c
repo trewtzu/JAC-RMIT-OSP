@@ -221,8 +221,7 @@ void *beginStreaming(void *args)
     error("ERROR setting sock opt");
 
   /* Begin streaming songs from the queue */
-  while (1)
-  {
+  while (1){
     /* Get next song from the queue */
     char *songName = retrieve_song(queue, list);
 
@@ -235,15 +234,24 @@ void *beginStreaming(void *args)
       error("ERROR loading wave file");
 
     /* Send data at approximately real-time */
-    int packetSize = STREAM_PACKET_SIZE;
+    int packetSize = STREAM_PACKET_S;
     uint frameSize = getFrameSize(wav->format);
+
+    /* Calculate the bytes per second that need to be 
+     * broadcast */
     uint bps = wav->format->sampleRate * frameSize;
+
+    /* Calculate how many packets need to be 
+     * broadcast every second */
     uint pps = bps / packetSize;
+
+    /* Calculate the delay between packets in microseconds */
+    uint delay = (1.0 / pps) * BROADCAST_DELAY;
     
+    /* Broadcast data until the entire song has been sent */
     int totalBytes = 0;
     int bytesLeft = wav->data->size;
-    while (bytesLeft > 0)
-    {
+    while (bytesLeft > 0){
       int availBytes = packetSize;
       if (bytesLeft < availBytes)
         availBytes = bytesLeft;
@@ -251,17 +259,18 @@ void *beginStreaming(void *args)
       bytesSent = sendto(sockfd, wav->data->data + totalBytes, packetSize, 0,
           destInfo->ai_addr, destInfo->ai_addrlen);
       if (bytesSent == -1)
-      {
         error("ERROR sending stream data");
-      }
 
       totalBytes += bytesSent;
       bytesLeft -= bytesSent;
 
-      usleep((1.0 / pps) * 955000);
+      usleep(delay);
     }
 
+    /* Tell the queue that the song finished */
     update_queue(queue);
+
+    /* Song is finished so we no longer need it in memory */
     deleteWav(wav);
     free(songName);
   }
