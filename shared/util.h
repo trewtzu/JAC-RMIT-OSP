@@ -24,6 +24,7 @@
 
 #include <netdb.h> 
 
+//a short macro to replace the depreciated bzerro
 #define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
 #define MAX_BUFF 100
 

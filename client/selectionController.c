@@ -11,7 +11,7 @@
 void begin(int sockfd)
 {
   char selection[PACKET_S+1];
-	int sock;
+  int sock;
   int choice, valid, result;
   sock = sockfd;
 
@@ -69,7 +69,7 @@ void list_request(int sockfd)
 {
     char **allsongs;
     char **qsongs;
-	  char buffer[PACKET_S+1];
+	char buffer[PACKET_S+1];
     int song_count;
     int q_count; 
     int i, n;

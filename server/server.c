@@ -33,7 +33,7 @@ void error(const char *msg)
 }
 
 /*
- * simple usage disply
+ * simple usage display
  */
 void usage()
 {
@@ -43,7 +43,7 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-  char **all_songs;
+	char **all_songs;
 	int sockfd, newsockfd, portNum;
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
@@ -64,10 +64,10 @@ int main(int argc, char *argv[])
 
 	/* Prep sock settings */
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY  is this mechines address
-	serv_addr.sin_port = htons(portNum); //note htons ensures the int is in network btye order
+	serv_addr.sin_addr.s_addr = INADDR_ANY; // INADDR_ANY  is this machines address
+	serv_addr.sin_port = htons(portNum); //note htons ensures the int is in network byte order
 	
-
+	//binds a socket for us, and starts its up
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
 		error("ERROR on binding");
 
@@ -78,16 +78,16 @@ int main(int argc, char *argv[])
 	printf("\nServer is starting on port: %d\n",portNum);
 	
 	/* Prepare list for all songs */
-  list = new_queue ();  
+	list = new_queue ();  
 	/* Prepare list for queued songs */ 
-  queue = new_queue ();
+	queue = new_queue ();
 
-  /* Scan directory and gather filenames */
-  read_directory ();
+	/* Scan directory and gather filenames */
+	read_directory ();
 	all_songs = import_list ();
 	
-  /* Populate complete song list */
-  for (i = 0; all_songs[i] != NULL; i++)
+	/* Populate complete song list */
+	for (i = 0; all_songs[i] != NULL; i++)
     add_song (list, all_songs[i]);
 
   /* Populate queue with one song to start */
@@ -98,40 +98,39 @@ int main(int argc, char *argv[])
    */
   int thread_id=0;
   pthread_t streamThread;
- 	while(1)
-	{
+	while(1){
 		client_args_t *args = NULL;
-    printf("Preparing thread %d\n", thread_id);
+		printf("Preparing thread %d\n", thread_id);
     		
-    args = safe_malloc (sizeof (client_args_t));
+		args = safe_malloc (sizeof (client_args_t));
 
 		clilen = sizeof(cli_addr);
-		
-    /* Connect client to server */
-    args->sock = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);		
-    if (args->sock < 0) 
+	
+		/* Connect client to server */
+		args->sock = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);		
+		if (args->sock < 0) 
 			error("ERROR on accept");
 
 		args->id = thread_id;
 
-    pthread_t thread; 		
+		pthread_t thread; 		
     
-    /* Begin the thread.
-     * Arg 3 is function name where thread begins execution.
-     * Arg 4 is a pointer to a struct of parameters for the function.
-     */
-    pthread_create(&thread,NULL,&clientAction,(void *)args);	 	
+		/* Begin the thread.
+		* Arg 3 is function name where thread begins execution.
+		* Arg 4 is a pointer to a struct of parameters for the function.
+		*/
+		pthread_create(&thread,NULL,&clientAction,(void *)args);	 	
     
-    printf("Thread %d live\n", thread_id);
+		printf("Thread %d live\n", thread_id);
 
-    /* If this is the first client, begin streaming */
-    if (thread_id == 0) 
-    {
-      pthread_create(&streamThread, NULL, beginStreaming, NULL);
-    }
+		/* If this is the first client, begin streaming */
+		if (thread_id == 0) 
+		{
+			pthread_create(&streamThread, NULL, beginStreaming, NULL);
+		}
 
 		thread_id++;
- 	}
+	}
 
 	close(sockfd);
 	return 0;
@@ -139,58 +138,59 @@ int main(int argc, char *argv[])
 
 
 /*
- * This is an action to be take by our thread, 
+ * This thread handles core communication from the client
  */
 void *clientAction(void *arguments){
 	
-  client_args_t *args = NULL;
-  int n, choice, add_song, result;
-  char *message;
+	client_args_t *args = NULL;
+	int n, choice, add_song, result;
+	char *message;
 	char buffer[PACKET_S+1];
 	
-  bzero(buffer,PACKET_S+1);
+	bzero(buffer,PACKET_S+1);
 	
-  args = (client_args_t *) arguments;
+	args = (client_args_t *) arguments;
 
-  do
-  {
-    /* Wait for client communication */
-    n = read(args->sock, buffer, PACKET_S);
-    /* Check for error or closed socket */
-    if (n < 0)
-      error("ERROR reading from socket");
-    else if (n == 0)
-      break;
+	do{
+	/* Wait for client communication */
+	n = read(args->sock, buffer, PACKET_S);
+	/* Check for error or closed socket */
+	if (n < 0)
+		error("ERROR reading from socket");
+		else if (n == 0)
+		break;
     
-    choice = atoi(buffer);
+		choice = atoi(buffer);
     
-    if (choice == 101)
-    {
-      /* Pass queue information to client */
-      sendListings(args->sock, args->id);
-    }
-    else if (choice == 102)
-    {
-      /* Receive client selection */
-      n = read(args->sock, buffer, PACKET_S);
-      if (n < 0)
-        error("ERROR reading from socket");
+		if (choice == 101){
+			/* Pass queue information to client */
+			sendListings(args->sock, args->id);
+		}
+		else if (choice == 102){
+			/* Receive client selection */
+			n = read(args->sock, buffer, PACKET_S);
+			if (n < 0)
+				error("ERROR reading from socket");
       
-      add_song = atoi(buffer);
+			add_song = atoi(buffer);
 
-      /* Add client selection to queue */
-      result = queue_song(queue, list, add_song);
+			/* Add client selection to queue */
+			result = queue_song(queue, list, add_song);
       
-      sprintf(buffer, "%d", result);
-      n = write(args->sock, buffer, PACKET_S);
-      if (n < 0)
-        error("ERROR writing to socket");  
-    }
-  } while(1);
+			sprintf(buffer, "%d", result);
+			n = write(args->sock, buffer, PACKET_S);
+			if (n < 0)
+				error("ERROR writing to socket");  
+		}
+	} while(1);
 	
 	close(args->sock);
 }
 
+
+/*
+ *Thread to control audio steaming to broadcast
+ */
 void *beginStreaming(void *args)
 {
   int sockfd, err, bytesSent;
@@ -264,54 +264,55 @@ void *beginStreaming(void *args)
   close(sockfd);
 }
 
+/* 
+ * Send song listing to client
+ */
 void sendListings(int clisock, int id){
 
 	int n, i;
 	char buffer[PACKET_S+1];
 	
-  char** all_songs = get_list(list);
-  char** q_songs = get_list(queue);
+	char** all_songs = get_list(list);
+	char** q_songs = get_list(queue);
 	
-  /* Write song count to client */
-  sprintf(buffer, "%d", list->count);
+	/* Write song count to client */
+	sprintf(buffer, "%d", list->count);
   
-  n = write(clisock, buffer, PACKET_S);
-  if (n < 0)
-    error("ERROR writing to socket");
+	n = write(clisock, buffer, PACKET_S);
+	if (n < 0)
+		error("ERROR writing to socket");
   
-  /* Write each song title to client */
-	for (i = 0; all_songs[i] != NULL; i++)
-	{
+	/* Write each song title to client */
+	for (i = 0; all_songs[i] != NULL; i++){
 		n = write(clisock,all_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	  usleep(10000);
-  }	
+	}
 
-  /* Write queue count to client */
-  sprintf(buffer, "%d", queue->count);
+	/* Write queue count to client */
+	sprintf(buffer, "%d", queue->count);
 
-  n = write(clisock, buffer, PACKET_S);
+	n = write(clisock, buffer, PACKET_S);
 	if (n < 0)
 		error("ERROR writing to socket");
 
-  /* Write each song title to client */
-	for (i = 0; q_songs[i] != NULL; i++)
-	{
+	/* Write each song title to client */
+	for (i = 0; q_songs[i] != NULL; i++){
 		n = write(clisock,q_songs[i],PACKET_S);
 		if (n < 0)
 			error("ERROR writing to socket");
 	  usleep(10000);
-  }	
+	}
   
-  /* Free both song lists */
-  for (i = 0; all_songs[i] != NULL; i++)
-    free (all_songs[i]);
-  for (i = 0; q_songs[i] != NULL; i++)
-    free (q_songs[i]);
+	/* Free both song lists */
+	for (i = 0; all_songs[i] != NULL; i++)
+		free (all_songs[i]);
+	for (i = 0; q_songs[i] != NULL; i++)
+		free (q_songs[i]);
   
-  free (all_songs);
-  free (q_songs);
+	free (all_songs);
+	free (q_songs);
 
-  return;
+	return;
 }

@@ -1,17 +1,1 @@
-CRItICAL AND BIG
-Data streaming, 
-Playback
-
-
-need to be done:
-replace all magic numbers with consts
-note that network based consts need to be put in to a protocal document.
-add input to select queue
-Add makefile
-Server isnt passing threadID correctly, so clients threads are miss reporting who they are.
-Make queue thread safe (Cory)
-
-should be done:
-networking needs to me made cleaner in client
-make curses display
-Fix code style (yeah, my bad)
+need more comments

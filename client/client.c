@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 
-	//NOTE: this is deprecated. it will need to be replaced with a macro
 	bcopy((char *)server->h_addr, 
 			(char *)&serv_addr.sin_addr.s_addr,
 			server->h_length);
@@ -81,8 +80,8 @@ int main(int argc, char *argv[])
 	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		error("ERROR connecting");
 
-  pthread_t playbackThread;
-  pthread_create(&playbackThread, NULL, beginPlayback, NULL);
+	pthread_t playbackThread;
+	pthread_create(&playbackThread, NULL, beginPlayback, NULL);
   
 	//At this point client behaviour starts
 	begin(sockfd);
