@@ -11,6 +11,7 @@
 
 #define BROADCAST_ADDR "127.255.255.255"
 #define STREAM_PORT "8909"
+#define STREAM_PACKET_S 1470
 
 #define PACKET_S 255
 
