@@ -126,37 +126,53 @@ void *beginPlayback(void *args)
   /* Prepare the sound device for playback */
   snd_pcm_t *handle = initWavPlayback(&format, &periodFrames);
 
+  /* Get the size of a single frame */
   uint frameSize = getFrameSize(&format);
   
+  /* Create a buffer that can hold 150 periods of audio data */
   uint bufferSize = periodFrames * 150 * frameSize;
+
+  /* Initialize the buffers */
   buffer1 = createAudioBuffer(bufferSize);
   buffer2 = createAudioBuffer(bufferSize);
   
   AudioBuffer *leftoverBuffer = createAudioBuffer(frameSize);
 
+  /* Start the buffering thread */
   pthread_t receiveThread;
   pthread_create(&receiveThread, NULL, receive, NULL);
 
-  uint byteCount = 0;
+  /* Set the current buffer and mutex */
   AudioBuffer *currentBuffer = buffer1;
   pthread_mutex_t *currentMutex = &buffer1Mutex;
+
+  uint byteCount = 0;
   while (1){
     uint wholeFrames = 0, diff = 0, i = 0;
 
+    /* Lock the current buffer */
     pthread_mutex_lock(currentMutex);
 
+    /* Wait until the buffer has been filled */
     while (!currentBuffer->full)
       pthread_cond_wait(&bufferCV, currentMutex);
 
+    /* Calculate the number of whole frames of data that have been
+     * received */
     wholeFrames = currentBuffer->count / frameSize; /* Integer division */
+
+    /* Write those frames to the sound card */
     bufferWav(handle, currentBuffer->data + diff, wholeFrames);
     leftoverBuffer->count = currentBuffer->count - (wholeFrames * frameSize);
 
+    /* Mark the buffer as being empty */
     currentBuffer->count = 0;
     currentBuffer->full = false;
 
+    /* Release the lock on the buffer */
     pthread_mutex_unlock(currentMutex);
 
+    /* Switch to the other buffer */
     if (currentBuffer == buffer1){
       currentBuffer = buffer2;
       currentMutex = &buffer2Mutex;
@@ -174,56 +190,70 @@ void *receive(void *args)
   int sockfd, err, numBytes;
   struct addrinfo hints, *servInfo;
 
+  /* Setup the socket */
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_flags = AI_PASSIVE;
 
+  /* Get info about the server address */
   err = getaddrinfo(NULL, STREAM_PORT, &hints, &servInfo);
   if (err != 0)
     error("ERROR getting server address info");
 
+  /* Create the socket */
   sockfd = socket(servInfo->ai_family, servInfo->ai_socktype,
     servInfo->ai_protocol);
   if (sockfd == -1)
     error("ERROR creating socket");
 
+  /* Bind the server info to the socket */
   err = bind(sockfd, servInfo->ai_addr, servInfo->ai_addrlen);
   if (err == -1)
     error("ERROR binding socket");
 
+  /* Server info is no longer needed */
   freeaddrinfo(servInfo);
 
-  uint packetSize = 1470;
+  uint packetSize = STREAM_PACKET_S;
 
+  /* Set the current buffer/mutex */
   AudioBuffer *currentBuffer = buffer1;
   pthread_mutex_t *currentMutex = &buffer1Mutex;
 
+  /* Begin receiving data from the socket */
   uint byteCount = 0;
   while (1){
     uint wholeFrames = 0, i = 0;
 
+    /* Lock the current buffer */
     pthread_mutex_lock(currentMutex);
 
     /* Fill the buffer */
     while(currentBuffer->count + packetSize < currentBuffer->capacity){
       int numBytes = 0;
       
+      /* Get a packet from the socket */
       numBytes = recvfrom(sockfd, currentBuffer->data + currentBuffer->count, packetSize, 0, NULL, NULL);
       if (numBytes == -1)
         error("ERROR receiving streaming data");
       else if (numBytes == 0)
         error("ERROR connection to server closed");
 
+      /* Update the data count for the buffer */
       currentBuffer->count += numBytes;
     }
 
+    /* Mark the buffer as being full */
     currentBuffer->full = true;
 
+    /* Let the playback thread know the buffer is ready */
     pthread_cond_signal(&bufferCV);
 
+    /* Release the lock on the buffer */
     pthread_mutex_unlock(currentMutex);
 
+    /* Switch to the other buffer */
     if (currentBuffer == buffer1){
       currentBuffer = buffer2;
       currentMutex = &buffer2Mutex;
