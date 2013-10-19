@@ -189,28 +189,32 @@ void *clientAction(void *arguments){
 
 
 /*
- *Thread to control audio steaming to broadcast
+ *Thread to control audio streaming to broadcast
  */
 void *beginStreaming(void *args)
 {
   int sockfd, err, bytesSent;
   struct addrinfo hints, *destInfo;
   int broadcast = 1; /* Tell socket to enable broadcasting */
-  WavFile *wav;
+  WavFile *wav = NULL;
 
+  /* Setup the socket */
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_INET; /* Force IPv4 */
   hints.ai_socktype = SOCK_DGRAM;
 
+  /* Get information about the destination address */
   err = getaddrinfo(BROADCAST_ADDR, STREAM_PORT, &hints, &destInfo);
   if (err != 0)
     error("ERROR getting stream address info");
 
+  /* Create the socket */
   sockfd = socket(destInfo->ai_family, destInfo->ai_socktype,
     destInfo->ai_protocol);
   if (sockfd == -1)
     error("ERROR creating socket");
 
+  /* Make the socket a broadcast socket */
   err = setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast,
     sizeof broadcast);
   if (err == -1)
@@ -219,17 +223,19 @@ void *beginStreaming(void *args)
   /* Begin streaming songs from the queue */
   while (1)
   {
+    /* Get next song from the queue */
     char *songName = retrieve_song(queue, list);
 
     if (songName == NULL)
       error("ERROR queue is empty");
 
+    /* Create a new WAV file and load in the data */
     wav = createWav(songName);
     if (!loadWavData(wav))
       error("ERROR loading wave file");
 
     /* Send data at approximately real-time */
-    int packetSize = 1470;
+    int packetSize = STREAM_PACKET_SIZE;
     uint frameSize = getFrameSize(wav->format);
     uint bps = wav->format->sampleRate * frameSize;
     uint pps = bps / packetSize;
