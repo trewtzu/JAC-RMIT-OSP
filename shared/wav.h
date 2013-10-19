@@ -30,6 +30,11 @@
 
 typedef unsigned int uint;
 
+/**
+ * Structs
+ */
+ 
+/* Format chunk struct */
 typedef struct {
   uint size;
   uint compressionCode;
@@ -40,11 +45,13 @@ typedef struct {
   uint significantBPS;
 } FormatChunk;
 
+/* Data chunk struct */
 typedef struct {
   uint size;
   unsigned char *data;
 } DataChunk;
 
+/* Struct for whole WAV file */
 typedef struct {
   char *filename;
   uint size;
@@ -52,14 +59,25 @@ typedef struct {
   DataChunk *data;
 } WavFile;
 
+/* Chunk type */
 typedef struct {
   char *id;
   bool (*chunkFunc)(WavFile *wav, FILE *file);
 } ChunkType;
 
-/* Helper functions */
+/**
+ * Helper functions
+ */
+
+/* Check if two chunk IDs the same */
 bool chunkIdCompare(char *id1, char *id2);
+
+/* Read n bytes from file and convert those bytes
+ * to an unsigned int */
 uint bytesToUint(FILE *file, uint n);
+
+/* Calculate the size of a single frame given a
+ * specific format */
 uint getFrameSize(FormatChunk *format);
 
 /* Create / delete */
