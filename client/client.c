@@ -21,7 +21,10 @@ typedef struct
   bool full;
 } AudioBuffer;
 
+/* Function to initialize a new AudioBuffer struct */
 AudioBuffer *createAudioBuffer(uint size);
+
+/* Thread callbacks */
 void *beginPlayback(void *args);
 void *receive(void *args);
 
@@ -34,14 +37,14 @@ void error(const char *msg)
 	exit(0);
 }
 
-
+/* Global audio buffers */
 AudioBuffer *buffer1 = NULL;
 AudioBuffer *buffer2 = NULL;
 
+/* Thread safety variables */
 pthread_mutex_t buffer1Mutex;
 pthread_mutex_t buffer2Mutex;
 pthread_cond_t bufferCV;
-
 
 int main(int argc, char *argv[])
 {
@@ -54,20 +57,20 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	//grab the port
+	/* grab the port */
 	portno = atoi(argv[2]);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) 
 		error("ERROR opening socket");
 
-	//grab the ip
+	/* grab the ip */
 	server = gethostbyname(argv[1]);
 	if (server == NULL) {
 		fprintf(stderr,"ERROR, no such host\n");
 		exit(0);
 	}
 
-	//Prep the connection rules
+	/* Prep the connection rules */
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 
@@ -76,14 +79,14 @@ int main(int argc, char *argv[])
 			server->h_length);
 	serv_addr.sin_port = htons(portno);
 
-	//and connect
+	/* and connect */
 	if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		error("ERROR connecting");
 
 	pthread_t playbackThread;
 	pthread_create(&playbackThread, NULL, beginPlayback, NULL);
   
-	//At this point client behaviour starts
+	/* At this point client behaviour starts */
 	begin(sockfd);
   
 	close(sockfd);
@@ -105,6 +108,8 @@ AudioBuffer *createAudioBuffer(uint size)
 
 void *beginPlayback(void *args)
 {
+  /* Create a format chunk with our supported
+   * wav format settings */
   FormatChunk format;
   format.size = 16;
   format.compressionCode = 0;
@@ -114,7 +119,11 @@ void *beginPlayback(void *args)
   format.blockAlign = 0;
   format.significantBPS = 16;
 
+  /* Create storage space for the size of a period
+   * (initialize to anything, it will be overwritten anyway */
   snd_pcm_uframes_t periodFrames = 1024;
+
+  /* Prepare the sound device for playback */
   snd_pcm_t *handle = initWavPlayback(&format, &periodFrames);
 
   uint frameSize = getFrameSize(&format);
@@ -131,16 +140,13 @@ void *beginPlayback(void *args)
   uint byteCount = 0;
   AudioBuffer *currentBuffer = buffer1;
   pthread_mutex_t *currentMutex = &buffer1Mutex;
-  while (1)
-  {
+  while (1){
     uint wholeFrames = 0, diff = 0, i = 0;
 
     pthread_mutex_lock(currentMutex);
 
     while (!currentBuffer->full)
-    {
       pthread_cond_wait(&bufferCV, currentMutex);
-    }
 
     wholeFrames = currentBuffer->count / frameSize; /* Integer division */
     bufferWav(handle, currentBuffer->data + diff, wholeFrames);
@@ -151,13 +157,10 @@ void *beginPlayback(void *args)
 
     pthread_mutex_unlock(currentMutex);
 
-    if (currentBuffer == buffer1)
-    {
+    if (currentBuffer == buffer1){
       currentBuffer = buffer2;
       currentMutex = &buffer2Mutex;
-    }
-    else
-    {
+    }else{
       currentBuffer = buffer1;
       currentMutex = &buffer1Mutex;
     }
@@ -197,15 +200,13 @@ void *receive(void *args)
   pthread_mutex_t *currentMutex = &buffer1Mutex;
 
   uint byteCount = 0;
-  while (1)
-  {
+  while (1){
     uint wholeFrames = 0, i = 0;
 
     pthread_mutex_lock(currentMutex);
 
     /* Fill the buffer */
-    while(currentBuffer->count + packetSize < currentBuffer->capacity)
-    {
+    while(currentBuffer->count + packetSize < currentBuffer->capacity){
       int numBytes = 0;
       
       numBytes = recvfrom(sockfd, currentBuffer->data + currentBuffer->count, packetSize, 0, NULL, NULL);
@@ -223,13 +224,10 @@ void *receive(void *args)
 
     pthread_mutex_unlock(currentMutex);
 
-    if (currentBuffer == buffer1)
-    {
+    if (currentBuffer == buffer1){
       currentBuffer = buffer2;
       currentMutex = &buffer2Mutex;
-    }
-    else
-    {
+    }else{
       currentBuffer = buffer1;
       currentMutex = &buffer1Mutex;
     }
